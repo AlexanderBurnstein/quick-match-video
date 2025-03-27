@@ -150,7 +150,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pt-8 pb-24 px-4 flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30">
+    <div className="min-h-screen pb-24 flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30">
       {currentProfiles.length > 0 ? (
         <ProfileCard
           profile={getCurrentProfile()}

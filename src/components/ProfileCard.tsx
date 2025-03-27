@@ -117,13 +117,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
   return (
     <div 
       className={cn(
-        "card-container w-full max-w-sm mx-auto relative",
+        "card-container w-full max-w-md mx-auto relative h-[calc(100vh-8rem)]",
         swipeDirection === 'left' && 'animate-card-swipe-left',
         swipeDirection === 'right' && 'animate-card-swipe-right'
       )}
     >
       <div
-        className="profile-card glass rounded-3xl overflow-hidden shadow-lg"
+        className="profile-card glass rounded-3xl overflow-hidden shadow-lg h-full"
         style={{ 
           transform: `rotate(${cardRotation}deg) translateX(${offsetX * 0.2}px)`,
           opacity: cardOpacity,
@@ -136,7 +136,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <div className="relative h-[500px] w-full">
+        <div className="relative h-full w-full">
           {/* Image pager indicators */}
           <div className="absolute top-4 left-0 right-0 z-10 flex justify-center space-x-1">
             {profile.images.map((_, index) => (
@@ -152,8 +152,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
             ))}
           </div>
 
-          {/* Main image */}
-          <div className="relative h-full w-full overflow-hidden">
+          {/* Main image - now full height */}
+          <div className="absolute inset-0 h-full w-full overflow-hidden">
             <img
               src={profile.images[currentImageIndex]}
               alt={`${profile.name}'s photo`}
@@ -191,6 +191,23 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
             </div>
           </div>
 
+          {/* Overlaid Action buttons */}
+          <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-12 px-6">
+            <button 
+              onClick={handlePass}
+              className="p-4 rounded-full bg-white/20 backdrop-blur-md shadow-lg hover:bg-white/30 hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+            >
+              <X size={32} className="text-red-500" />
+            </button>
+            
+            <button 
+              onClick={handleLike}
+              className="p-4 rounded-full bg-white/20 backdrop-blur-md shadow-lg hover:bg-white/30 hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+            >
+              <Heart size={32} className="text-primary" />
+            </button>
+          </div>
+
           {/* Expanded details panel */}
           {showDetails && (
             <div 
@@ -225,23 +242,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
             </div>
           )}
         </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex justify-center gap-6 mt-8">
-        <button 
-          onClick={handlePass}
-          className="p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
-        >
-          <X size={28} className="text-red-500" />
-        </button>
-        
-        <button 
-          onClick={handleLike}
-          className="p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
-        >
-          <Heart size={28} className="text-accent" />
-        </button>
       </div>
     </div>
   );
