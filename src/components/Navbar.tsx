@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Heart, User, Video } from 'lucide-react';
+import { Home, Heart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const navItems = [
-    { to: "/", icon: Home, label: "Discover" },
+    { to: "/home", icon: Home, label: "Discover" },
     { to: "/matches", icon: Heart, label: "Matches" },
     { to: "/profile", icon: User, label: "Profile" }
   ];
