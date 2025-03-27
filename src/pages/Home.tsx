@@ -212,31 +212,37 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30">
-      {currentProfiles.length > 0 ? (
-        <ProfileCard
-          profile={getCurrentProfile()}
-          onSwipeLeft={handleSwipeLeft}
-          onSwipeRight={handleSwipeRight}
-          isPremium={isPremium}
-        />
-      ) : (
-        <div className="glass p-8 rounded-3xl text-center animate-pulse-light">
-          <h3 className="text-xl font-semibold mb-2">Finding new matches...</h3>
-          <p className="text-muted-foreground">Check back soon for more profiles</p>
-        </div>
-      )}
+    <div className="min-h-screen pb-16 flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30">
+      {/* Main content area */}
+      <div className="w-full h-full flex-1 flex flex-col items-center justify-center">
+        {currentProfiles.length > 0 ? (
+          <ProfileCard
+            profile={getCurrentProfile()}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            isPremium={isPremium}
+          />
+        ) : (
+          <div className="glass p-8 rounded-3xl text-center animate-pulse-light">
+            <h3 className="text-xl font-semibold mb-2">Finding new matches...</h3>
+            <p className="text-muted-foreground">Check back soon for more profiles</p>
+          </div>
+        )}
+      </div>
       
+      {/* Premium upgrade bar - fixed at the bottom of screen above navbar */}
       {!inCall && !showTimer && !isPremium && (
-        <div className="fixed bottom-20 w-full max-w-md mx-auto px-4 z-10">
-          <button 
-            onClick={handleUpgradeToPremium} 
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium shadow-lg flex items-center justify-center gap-2"
-          >
-            <span className="text-amber-100">✨</span>
-            Upgrade to Premium
-            <span className="text-amber-100">✨</span>
-          </button>
+        <div className="fixed bottom-16 left-0 right-0 flex justify-center z-10">
+          <div className="w-full max-w-md mx-auto px-4">
+            <button 
+              onClick={handleUpgradeToPremium} 
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium shadow-lg flex items-center justify-center gap-2"
+            >
+              <span className="text-amber-100">✨</span>
+              Upgrade to Premium
+              <span className="text-amber-100">✨</span>
+            </button>
+          </div>
         </div>
       )}
       

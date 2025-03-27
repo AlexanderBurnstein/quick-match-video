@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Phone, Video as VideoIcon, VideoOff, MessageCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, MicOff, Phone, Video as VideoIcon, VideoOff, MessageCircle, X, Heart, ThumbsUp, Reply } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VideoCallProps {
@@ -21,20 +20,33 @@ interface VideoCallProps {
   onRequestChat?: (userId: string) => void;
 }
 
+interface Message {
+  id: string;
+  sender: 'me' | 'them';
+  text: string;
+  timestamp: Date;
+  reactions: Array<{
+    type: 'heart' | 'like';
+    by: 'me' | 'them';
+  }>;
+  replyTo?: string;
+}
+
 const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequestChat }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callTime, setCallTime] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<{sender: 'me' | 'them', text: string}[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [requestedChat, setRequestedChat] = useState(false);
   const [chatAccepted, setChatAccepted] = useState(false);
   const [chatRequestReceived, setChatRequestReceived] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Format call time as MM:SS
   const formatCallTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -46,7 +58,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
       setCallTime(prev => prev + 1);
     }, 1000);
 
-    // Simulate receiving chat request after call ends - not during
     const chatRequestTimer = setTimeout(() => {
       if (callEnded && !requestedChat) {
         setChatRequestReceived(true);
@@ -59,6 +70,10 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
     };
   }, [callEnded, requestedChat]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const toggleMute = () => setIsMuted(!isMuted);
   const toggleVideo = () => setIsVideoOff(!isVideoOff);
   const toggleChat = () => setIsChatOpen(!isChatOpen);
@@ -68,18 +83,29 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
     e.preventDefault();
     if (!message.trim()) return;
     
-    setMessages([...messages, { sender: 'me', text: message }]);
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      sender: 'me',
+      text: message,
+      timestamp: new Date(),
+      reactions: [],
+      replyTo: replyingTo || undefined
+    };
+    
+    setMessages([...messages, newMessage]);
     setMessage('');
+    setReplyingTo(null);
 
-    // Simulate response after a short delay
     setTimeout(() => {
-      setMessages(prev => [
-        ...prev, 
-        { 
-          sender: 'them', 
-          text: "Thanks for the message! I'm enjoying our conversation." 
-        }
-      ]);
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'them',
+        text: "Thanks for the message! I'm enjoying our conversation.",
+        timestamp: new Date(),
+        reactions: []
+      };
+      
+      setMessages(prev => [...prev, responseMessage]);
     }, 2000);
   };
 
@@ -91,7 +117,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
   const handleRequestChat = () => {
     setRequestedChat(true);
     
-    // Simulate other user accepting after 2 seconds
     setTimeout(() => {
       setChatAccepted(true);
       if (onRequestChat) onRequestChat(matchedUser.id);
@@ -107,11 +132,45 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
     setChatRequestReceived(false);
   };
 
+  const handleAddReaction = (messageId: string, reactionType: 'heart' | 'like') => {
+    setMessages(prevMessages => 
+      prevMessages.map(msg => {
+        if (msg.id === messageId) {
+          const existingReactionIndex = msg.reactions.findIndex(
+            r => r.type === reactionType && r.by === 'me'
+          );
+          
+          if (existingReactionIndex !== -1) {
+            const updatedReactions = [...msg.reactions];
+            updatedReactions.splice(existingReactionIndex, 1);
+            return { ...msg, reactions: updatedReactions };
+          }
+          
+          return {
+            ...msg,
+            reactions: [...msg.reactions, { type: reactionType, by: 'me' }]
+          };
+        }
+        return msg;
+      })
+    );
+  };
+
+  const handleReply = (messageId: string) => {
+    setReplyingTo(messageId);
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
+
+  const getMessageById = (id: string) => {
+    return messages.find(msg => msg.id === id);
+  };
+
   return (
     <div className="fixed inset-0 bg-black z-50 animate-fade-in flex">
-      {/* Main call view */}
       <div className="relative w-full h-full">
-        {/* "Their" video (fullscreen) */}
         <div className="absolute inset-0 bg-gray-900">
           {!isVideoOff ? (
             <img 
@@ -136,14 +195,12 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           )}
         </div>
 
-        {/* Your video (picture-in-picture) */}
         <div className="absolute right-4 top-4 w-32 h-48 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg z-10">
           <div className={cn(
             "w-full h-full",
             isVideoOff ? "bg-gray-800 flex items-center justify-center" : "bg-gray-900"
           )}>
             {!isVideoOff ? (
-              // Placeholder for your own camera
               <div className="w-full h-full bg-gradient-to-br from-red-800 to-red-600 flex items-center justify-center">
                 <span className="text-white">Your camera</span>
               </div>
@@ -153,7 +210,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         </div>
 
-        {/* Call info bar */}
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
           <div className="flex items-center gap-2 bg-black/30 backdrop-blur-md px-4 py-2 rounded-full">
             <span className="pulse-dot h-2 w-2 rounded-full bg-red-500 animate-pulse-light"></span>
@@ -168,7 +224,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         </div>
 
-        {/* User info overlay */}
         {showUserInfo && (
           <div className="absolute top-16 right-4 glass p-4 rounded-xl z-20 max-w-xs animate-fade-in">
             <div className="flex justify-between items-start mb-2">
@@ -205,7 +260,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         )}
 
-        {/* Chat overlay - semi-transparent and positioned over the video */}
         {isChatOpen && (
           <div className="absolute bottom-28 right-4 w-full max-w-xs h-3/5 flex flex-col z-20 animate-slide-in-right">
             <div className="flex-1 p-4 overflow-y-auto backdrop-blur-md bg-black/40 border border-white/10 rounded-t-xl">
@@ -216,24 +270,94 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {messages.map((msg, idx) => (
-                    <div 
-                      key={idx} 
-                      className={cn(
-                        "max-w-[80%] p-2.5 rounded-lg backdrop-blur-md",
-                        msg.sender === 'me' 
-                          ? "bg-red-500/80 text-white ml-auto rounded-br-none" 
-                          : "bg-white/10 text-white mr-auto rounded-bl-none"
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="relative group">
+                      {msg.replyTo && (
+                        <div className="ml-6 mb-1 p-1.5 bg-gray-800/60 text-gray-300 text-xs rounded border-l-2 border-gray-500 max-w-[90%]">
+                          <p className="truncate">
+                            {getMessageById(msg.replyTo)?.text || "Message not found"}
+                          </p>
+                        </div>
                       )}
-                    >
-                      {msg.text}
+                      
+                      <div 
+                        className={cn(
+                          "max-w-[80%] p-2.5 rounded-lg backdrop-blur-md",
+                          msg.sender === 'me' 
+                            ? "bg-red-500/80 text-white ml-auto rounded-br-none" 
+                            : "bg-white/10 text-white mr-auto rounded-bl-none"
+                        )}
+                      >
+                        {msg.text}
+                        
+                        {msg.reactions.length > 0 && (
+                          <div className="flex -space-x-1 mt-1">
+                            {msg.reactions.map((reaction, idx) => (
+                              <div 
+                                key={`${reaction.type}-${idx}`}
+                                className={cn(
+                                  "flex items-center justify-center rounded-full h-5 w-5",
+                                  reaction.type === 'heart' ? "bg-red-500" : "bg-blue-500"
+                                )}
+                              >
+                                {reaction.type === 'heart' ? (
+                                  <Heart size={12} className="text-white" />
+                                ) : (
+                                  <ThumbsUp size={12} className="text-white" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={cn(
+                        "opacity-0 group-hover:opacity-100 transition-opacity absolute",
+                        msg.sender === 'me' ? "left-0 -translate-x-full" : "right-0 translate-x-full",
+                        "top-1/2 -translate-y-1/2 flex flex-col gap-1"
+                      )}>
+                        <button 
+                          onClick={() => handleAddReaction(msg.id, 'heart')}
+                          className="p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-600"
+                        >
+                          <Heart size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleAddReaction(msg.id, 'like')}
+                          className="p-1.5 rounded-full bg-blue-500/80 text-white hover:bg-blue-600"
+                        >
+                          <ThumbsUp size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleReply(msg.id)}
+                          className="p-1.5 rounded-full bg-gray-500/80 text-white hover:bg-gray-600"
+                        >
+                          <Reply size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
             
             <div className="p-2 backdrop-blur-md bg-black/60 border-t border-white/10 rounded-b-xl">
+              {replyingTo && (
+                <div className="px-3 py-2 bg-gray-800/60 text-gray-300 text-xs mb-2 rounded flex justify-between items-center">
+                  <div className="flex items-center space-x-1 truncate">
+                    <Reply size={12} />
+                    <span className="truncate">
+                      {getMessageById(replyingTo)?.text.substring(0, 30) || "Message not found"}
+                      {(getMessageById(replyingTo)?.text.length || 0) > 30 && "..."}
+                    </span>
+                  </div>
+                  <button onClick={cancelReply} className="ml-2">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              
               <form onSubmit={sendMessage} className="flex gap-2">
                 <input
                   type="text"
@@ -256,7 +380,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         )}
 
-        {/* Chat request notification - Only shown after call is ended */}
         {callEnded && chatRequestReceived && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass p-4 rounded-xl z-30 animate-fade-in">
             <p className="text-center text-white mb-3">
@@ -279,7 +402,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         )}
 
-        {/* Call controls - positioned higher to avoid bottom navbar overlap */}
         <div className="absolute bottom-14 left-0 right-0 flex justify-center items-center gap-4 z-10">
           <div className="glass py-4 px-6 rounded-full flex items-center gap-6">
             <button 
@@ -321,7 +443,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         </div>
 
-        {/* Continue chat request - ONLY shown after call has ended */}
         {callEnded && !requestedChat && !chatAccepted && !chatRequestReceived && (
           <div className="absolute bottom-28 left-0 right-0 flex justify-center z-20">
             <button
