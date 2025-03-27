@@ -10,14 +10,20 @@ interface ProfileCardProps {
     age: number;
     bio: string;
     distance: string;
+    location?: string;
+    job?: string;
+    height?: string;
+    astroSign?: string;
+    school?: string;
     images: string[];
     interests: string[];
   };
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  isPremium?: boolean;
 }
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipeRight }) => {
+const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipeRight, isPremium = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [startX, setStartX] = useState(0);
@@ -117,7 +123,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
   return (
     <div 
       className={cn(
-        "card-container w-full max-w-md mx-auto relative h-[calc(100vh-8rem)]",
+        "card-container w-full max-w-md mx-auto relative h-[calc(100vh-6rem)]",
         swipeDirection === 'left' && 'animate-card-swipe-left',
         swipeDirection === 'right' && 'animate-card-swipe-right'
       )}
@@ -138,7 +144,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
       >
         <div className="relative h-full w-full">
           {/* Image pager indicators */}
-          <div className="absolute top-4 left-0 right-0 z-10 flex justify-center space-x-1">
+          <div className="absolute top-2 left-0 right-0 z-10 flex justify-center space-x-1">
             {profile.images.map((_, index) => (
               <div 
                 key={index} 
@@ -171,7 +177,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
           </div>
 
           {/* Overlay gradient */}
-          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
 
           {/* Profile info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -181,6 +187,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
                   {profile.name}, {profile.age}
                 </h2>
                 <p className="text-sm opacity-90">{profile.distance}</p>
+                <p className="text-sm opacity-90">{profile.job}</p>
+                {isPremium && (
+                  <>
+                    <p className="text-sm opacity-90">{profile.location}</p>
+                    <p className="text-sm opacity-90">{profile.height} • {profile.astroSign}</p>
+                    <p className="text-sm opacity-90">{profile.school}</p>
+                  </>
+                )}
               </div>
               <button
                 onClick={toggleDetails}
@@ -192,7 +206,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
           </div>
 
           {/* Overlaid Action buttons */}
-          <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-12 px-6">
+          <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-12 px-6">
             <button 
               onClick={handlePass}
               className="p-4 rounded-full bg-white/20 backdrop-blur-md shadow-lg hover:bg-white/30 hover:shadow-xl transform hover:scale-110 transition-all duration-200"
@@ -217,6 +231,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onSwipeLeft, onSwipe
               <div className="h-full flex flex-col text-white overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <h3 className="text-xl font-bold mb-2">About {profile.name}</h3>
                 <p className="mb-4">{profile.bio}</p>
+                
+                <div className="space-y-2 mb-4">
+                  <p><span className="font-medium">Location:</span> {profile.location}</p>
+                  <p><span className="font-medium">Job:</span> {profile.job}</p>
+                  <p><span className="font-medium">Height:</span> {profile.height}</p>
+                  <p><span className="font-medium">Astro Sign:</span> {profile.astroSign}</p>
+                  <p><span className="font-medium">Education:</span> {profile.school}</p>
+                </div>
                 
                 <h3 className="text-lg font-semibold mb-2">Interests</h3>
                 <div className="flex flex-wrap gap-2 mb-4">

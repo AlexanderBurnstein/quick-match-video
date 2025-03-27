@@ -12,6 +12,10 @@ interface VideoCallProps {
     interests?: string[];
     location?: string;
     age?: number;
+    job?: string;
+    height?: string;
+    astroSign?: string;
+    school?: string;
   };
   onEndCall: () => void;
   onRequestChat?: (userId: string) => void;
@@ -28,6 +32,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
   const [requestedChat, setRequestedChat] = useState(false);
   const [chatAccepted, setChatAccepted] = useState(false);
   const [chatRequestReceived, setChatRequestReceived] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
 
   // Format call time as MM:SS
   const formatCallTime = (seconds: number) => {
@@ -41,18 +46,18 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
       setCallTime(prev => prev + 1);
     }, 1000);
 
-    // Simulate receiving chat request after 30 seconds
+    // Simulate receiving chat request after call ends - not during
     const chatRequestTimer = setTimeout(() => {
-      if (!requestedChat) {
+      if (callEnded && !requestedChat) {
         setChatRequestReceived(true);
       }
-    }, 30000);
+    }, 2000);
 
     return () => {
       clearInterval(timer);
       clearTimeout(chatRequestTimer);
     };
-  }, [requestedChat]);
+  }, [callEnded, requestedChat]);
 
   const toggleMute = () => setIsMuted(!isMuted);
   const toggleVideo = () => setIsVideoOff(!isVideoOff);
@@ -76,6 +81,11 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
         }
       ]);
     }, 2000);
+  };
+
+  const handleEndCallInternal = () => {
+    setCallEnded(true);
+    onEndCall();
   };
 
   const handleRequestChat = () => {
@@ -168,6 +178,15 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
             {matchedUser.location && (
               <p className="text-sm text-gray-200 mb-2">📍 {matchedUser.location}</p>
             )}
+            {matchedUser.job && (
+              <p className="text-sm text-gray-200 mb-2">💼 {matchedUser.job}</p>
+            )}
+            {matchedUser.height && matchedUser.astroSign && (
+              <p className="text-sm text-gray-200 mb-2">📏 {matchedUser.height} • ✨ {matchedUser.astroSign}</p>
+            )}
+            {matchedUser.school && (
+              <p className="text-sm text-gray-200 mb-2">🎓 {matchedUser.school}</p>
+            )}
             {matchedUser.bio && (
               <p className="text-sm mb-3">{matchedUser.bio}</p>
             )}
@@ -188,7 +207,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
 
         {/* Chat overlay - semi-transparent and positioned over the video */}
         {isChatOpen && (
-          <div className="absolute bottom-24 right-4 w-full max-w-xs h-3/5 flex flex-col z-20 animate-slide-in-right">
+          <div className="absolute bottom-28 right-4 w-full max-w-xs h-3/5 flex flex-col z-20 animate-slide-in-right">
             <div className="flex-1 p-4 overflow-y-auto backdrop-blur-md bg-black/40 border border-white/10 rounded-t-xl">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-400 py-8">
@@ -203,7 +222,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
                       className={cn(
                         "max-w-[80%] p-2.5 rounded-lg backdrop-blur-md",
                         msg.sender === 'me' 
-                          ? "bg-primary/80 text-white ml-auto rounded-br-none" 
+                          ? "bg-red-500/80 text-white ml-auto rounded-br-none" 
                           : "bg-white/10 text-white mr-auto rounded-bl-none"
                       )}
                     >
@@ -225,7 +244,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
                 />
                 <button 
                   type="submit"
-                  className="p-2 rounded-full bg-primary text-white"
+                  className="p-2 rounded-full bg-red-500 text-white"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 2L11 13"></path>
@@ -237,8 +256,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         )}
 
-        {/* Chat request notification */}
-        {chatRequestReceived && (
+        {/* Chat request notification - Only shown after call is ended */}
+        {callEnded && chatRequestReceived && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass p-4 rounded-xl z-30 animate-fade-in">
             <p className="text-center text-white mb-3">
               {matchedUser.name} would like to continue chatting after this call
@@ -252,7 +271,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
               </button>
               <button 
                 onClick={handleAcceptChatRequest}
-                className="px-4 py-2 rounded-full bg-primary text-white"
+                className="px-4 py-2 rounded-full bg-red-500 text-white"
               >
                 Accept
               </button>
@@ -260,8 +279,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         )}
 
-        {/* Call controls */}
-        <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-4 z-10">
+        {/* Call controls - positioned higher to avoid bottom navbar overlap */}
+        <div className="absolute bottom-14 left-0 right-0 flex justify-center items-center gap-4 z-10">
           <div className="glass py-4 px-6 rounded-full flex items-center gap-6">
             <button 
               onClick={toggleMute}
@@ -287,14 +306,14 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
               onClick={toggleChat}
               className={cn(
                 "p-3 rounded-full transition-colors hover:bg-gray-100/10",
-                isChatOpen ? "bg-primary text-white" : "bg-white/10 text-white"
+                isChatOpen ? "bg-red-500 text-white" : "bg-white/10 text-white"
               )}
             >
               <MessageCircle size={24} />
             </button>
 
             <button 
-              onClick={onEndCall}
+              onClick={handleEndCallInternal}
               className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
             >
               <Phone size={24} />
@@ -302,15 +321,15 @@ const VideoCall: React.FC<VideoCallProps> = ({ matchedUser, onEndCall, onRequest
           </div>
         </div>
 
-        {/* Continue chat request (after call) */}
-        {callTime > 30 && !requestedChat && !chatAccepted && !chatRequestReceived && (
+        {/* Continue chat request - ONLY shown after call has ended */}
+        {callEnded && !requestedChat && !chatAccepted && !chatRequestReceived && (
           <div className="absolute bottom-28 left-0 right-0 flex justify-center z-20">
             <button
               onClick={handleRequestChat}
-              className="px-4 py-2 bg-primary text-white rounded-full shadow-lg flex items-center gap-2"
+              className="px-4 py-2 bg-red-500 text-white rounded-full shadow-lg flex items-center gap-2"
             >
               <MessageCircle size={16} />
-              Request to continue chatting after call
+              Request to continue chatting
             </button>
           </div>
         )}
